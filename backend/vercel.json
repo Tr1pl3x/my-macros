@@ -22,6 +22,12 @@
       "dest": "/api/$1"
     }
   ],
+  "functions": {
+    "api/estimate.js": {
+      "memory": 1024,
+      "maxDuration": 10
+    }
+  },
   "env": {
     "ANTHROPIC_API_KEY": "${ANTHROPIC_API_KEY}",
     "APP_PASSWORD": "${APP_PASSWORD}"
