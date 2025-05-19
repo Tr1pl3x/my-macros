@@ -1,5 +1,5 @@
-## My Macros 
-This guide outlines the entire setup of a mobile-first, password-protected web app that estimates the macros of a meal based on a photo using the OpenAI API or similar services. The app includes a secure backend and a responsive frontend, suitable for deployment on platforms like Vercel.
+## My Macros
+This outlines the entire setup of a mobile-first, password-protected web app that estimates the macros of a meal based on a photo using the Anthropic Claude 3 API. The app includes a secure backend and a responsive frontend, suitable for deployment on platforms like Vercel.
 
 ---
 
@@ -58,7 +58,7 @@ This guide outlines the entire setup of a mobile-first, password-protected web a
 
 ## Backend Implementation (Serverless API, Vercel-Compatible)
 
-### Iteration 3.1: Serverless API Setup
+### Iteration 1.1: Serverless API Setup
 1. Create a `backend/api/estimate.js` file:
    ```
    backend/
@@ -68,20 +68,21 @@ This guide outlines the entire setup of a mobile-first, password-protected web a
    ```
 2. Use `formidable` or `busboy` for image parsing compatible with Vercel functions.
 
-### Iteration 3.2: Secure Environment Variables
-1. Set your API key in Vercel: `Settings > Environment Variables > OPENAI_API_KEY`.
-2. Access it in code using `process.env.OPENAI_API_KEY`.
+### Iteration 1.2: Secure Environment Variables
+1. Set your API key in Vercel: `Settings > Environment Variables > ANTHROPIC_API_KEY`.
+2. Access it in code using `process.env.ANTHROPIC_API_KEY`.
 
-### Iteration 3.3: Validate & Process Request
+### Iteration 1.3: Validate & Process Request
 1. Extract image and password from the request.
 2. If password is wrong:
    - Return `401 Unauthorized` with a message.
 3. If correct:
    - Read `mode` from the request (`basic` or `detailed`).
+   - Upload image to a temporary hosting location and pass its URL.
    - Format prompt accordingly:
      - Basic: "Analyze this photo of a meal. Return the estimated macros (calories, protein, carbs, fat)."
      - Detailed: "Analyze this photo of a meal. Return the estimated macros (calories, protein, carbs, fat), and list the main ingredients visible in the image."
-   - Send to OpenAI Vision endpoint.
+   - Send a message to Anthropic's Claude 3 API using the image URL.
    - Return structured JSON with fields like:
      ```json
      {
@@ -93,9 +94,10 @@ This guide outlines the entire setup of a mobile-first, password-protected web a
      }
      ```
 
-### Iteration 3.4: Deployment
+### Iteration 1.4: Deployment
 1. Push backend to Vercel via GitHub or CLI.
 2. Test with frontend fetch call to `/api/estimate`.
 3. Enforce HTTPS by default via Vercel.
 
 ---
+
