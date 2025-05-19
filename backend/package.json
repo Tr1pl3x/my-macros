@@ -2,11 +2,11 @@
   "name": "my-macros-backend",
   "version": "1.0.0",
   "description": "Backend API for My Macros app",
-  "main": "index.js",
+  "main": "server.js",
+  "type": "module",
   "scripts": {
     "dev": "vercel dev",
     "deploy": "vercel deploy --prod",
-    "test:local": "node test/local-test.js",
     "start:express": "node server.js",
     "test:simple": "node simple-test-server.js"
   },
@@ -14,11 +14,10 @@
     "cors": "^2.8.5",
     "dotenv": "^16.5.0",
     "express": "^4.21.2",
-    "formidable": "^3.5.4",
+    "formidable": "^3.5.1",
     "node-fetch": "^3.3.2"
   },
   "devDependencies": {
     "vercel": "^33.0.0"
-  },
-  "type": "module"
+  }
 }

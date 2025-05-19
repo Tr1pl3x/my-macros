@@ -95,7 +95,11 @@ function App() {
       // Create form data for API request
       const formData = new FormData();
       formData.append('image', imageFile);
-      formData.append('password', '2911'); // Including password for verification
+      
+      // Use the APP_PASSWORD environment variable or fallback to default
+      const appPassword = import.meta.env.VITE_APP_PASSWORD || '2911';
+      formData.append('password', appPassword);
+      
       formData.append('mode', 'detailed'); // Explicitly request detailed mode to get ingredients
       
       // API endpoint URL - use environment variable if available
