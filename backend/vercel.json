@@ -12,8 +12,8 @@
       "dest": "/api/$1"
     }
   ],
-  "env": {
-    "ANTHROPIC_API_KEY": "@anthropic_api_key",
-    "APP_PASSWORD": "@app_password"
-  }
+"env": {
+  "ANTHROPIC_API_KEY": "${ANTHROPIC_API_KEY}",
+  "APP_PASSWORD": "${APP_PASSWORD}"
+}
 }
