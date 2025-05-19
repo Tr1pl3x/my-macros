@@ -96,9 +96,14 @@ function App() {
       const formData = new FormData();
       formData.append('image', imageFile);
       formData.append('password', '2911'); // Including password for verification
+      formData.append('mode', 'detailed'); // Explicitly request detailed mode to get ingredients
       
       // API endpoint URL - use environment variable if available
       const apiUrl = import.meta.env.VITE_API_URL || '/api/estimate';
+      
+      // Log the request details
+      console.log('Sending request to:', apiUrl);
+      console.log('Request mode:', 'detailed');
       
       try {
         const response = await fetch(apiUrl, {
@@ -113,15 +118,20 @@ function App() {
         
         const data = await response.json();
         
-        // Process the response data
+        // Log the raw API response for debugging
+        console.log('Raw API response:', data);
+        
+        // Process the response data without fallback ingredients
         const processedResponse = {
           calories: data.calories || 450,
           protein: data.protein || "25g",
           carbs: data.carbs || "45g",
           fat: data.fat || "15g",
-          ingredients: data.ingredients || ["grilled chicken", "rice", "broccoli"],
+          ingredients: data.ingredients || [], // Empty array if no ingredients
           imageUrl: imageUrl // Use the locally saved image URL
         };
+        
+        console.log('Processed response:', processedResponse);
         
         setMacroResults(processedResponse);
         setStep('results');
@@ -288,4 +298,3 @@ function App() {
 }
 
 export default App;
-

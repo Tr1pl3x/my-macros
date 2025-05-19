@@ -5,22 +5,25 @@ import * as dotenv from 'dotenv';
 import { fileURLToPath } from 'url';
 import { dirname, join } from 'path';
 import cors from 'cors';
-import { OpenAI } from 'openai';
+import fetch from 'node-fetch';
 
 // Load environment variables from .env file
 dotenv.config();
+
+// Log environment variables for debugging
+console.log('Environment variables:');
+console.log('- MOCK_API:', process.env.MOCK_API);
+console.log('- DEBUG:', process.env.DEBUG);
+console.log('- APP_PASSWORD:', process.env.APP_PASSWORD ? '[SET]' : '[NOT SET]');
+console.log('- ANTHROPIC_API_KEY:', process.env.ANTHROPIC_API_KEY ? '[SET]' : '[NOT SET]');
 
 // Get current directory
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 
-// Initialize OpenAI client with API key from .env
-const openai = new OpenAI({
-  apiKey: process.env.OPENAI_API_KEY,
-});
-
 // Set up password from .env or use default
 const CORRECT_PASSWORD = process.env.APP_PASSWORD || '2911';
+const ANTHROPIC_API_KEY = process.env.ANTHROPIC_API_KEY;
 
 // Create Express app
 const app = express();
@@ -52,6 +55,16 @@ const readFileAsBase64 = async (filepath) => {
   const data = await fs.readFile(filepath);
   return data.toString('base64');
 };
+
+// Simple test endpoint to check environment variables
+app.get('/api/test-env', (req, res) => {
+  res.json({
+    mockApi: process.env.MOCK_API,
+    debug: process.env.DEBUG,
+    hasPassword: !!process.env.APP_PASSWORD,
+    hasAnthropicKey: !!process.env.ANTHROPIC_API_KEY
+  });
+});
 
 // Main API endpoint for image analysis
 app.post('/api/estimate', async (req, res) => {
@@ -121,9 +134,11 @@ Analyze this food image and estimate nutritional values based on visible portion
     console.log('Converting image to base64...');
     const base64Image = await readFileAsBase64(imageFile.filepath);
     
-    // Debug option - to avoid using OpenAI API during testing
+    // Debug option - to avoid using Claude API during testing
     if (process.env.MOCK_API === 'true') {
       console.log('🔶 Using mock response (MOCK_API=true)');
+      console.log('MOCK_API value type:', typeof process.env.MOCK_API);
+      console.log('MOCK_API exact value:', JSON.stringify(process.env.MOCK_API));
       
       // Clean up temporary file
       await fs.unlink(imageFile.filepath);
@@ -179,16 +194,18 @@ Analyze this food image and estimate nutritional values based on visible portion
           fat: "22g",
         };
         if (mode === 'detailed') {
-          mockResponse.ingredients = ["unknown food item"];
+          mockResponse.ingredients = ["grilled chicken", "rice", "broccoli"];
         }
       }
       
       return res.status(200).json(mockResponse);
     }
     
-    // Make request to OpenAI API
+    // Make request to Claude API
     try {
-      console.log('🔍 Sending request to OpenAI Vision API...');
+      console.log('🔍 Sending request to Claude API...');
+      console.log('MOCK_API is false, using real Claude API');
+      console.log('Using Anthropic API Key:', process.env.ANTHROPIC_API_KEY ? 'Key is set' : 'Key is NOT set');
       
       // Implement exponential backoff retry logic
       const maxRetries = 2;
@@ -204,40 +221,103 @@ Analyze this food image and estimate nutritional values based on visible portion
             await new Promise(resolve => setTimeout(resolve, delayMs));
           }
           
-          // Send request to OpenAI
-          const response = await openai.chat.completions.create({
-            model: "gpt-4o",
-            messages: [
-              {
-                role: "user",
-                content: [
-                  { type: "text", text: prompt },
-                  {
-                    type: "image_url",
-                    image_url: {
-                      url: `data:image/${imageFile.mimetype};base64,${base64Image}`,
+          // Prepare the request to Claude API
+          const claudeResponse = await fetch('https://api.anthropic.com/v1/messages', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'x-api-key': ANTHROPIC_API_KEY,
+              'anthropic-version': '2023-06-01'
+            },
+            body: JSON.stringify({
+              model: "claude-3-opus-20240229",
+              max_tokens: 150,
+              temperature: 0.3,
+              system: "You are a nutrition expert analyzing food images. Provide only the requested JSON object with no additional text.",
+              messages: [
+                {
+                  role: "user",
+                  content: [
+                    {
+                      type: "text",
+                      text: prompt
                     },
-                  },
-                ],
-              },
-            ],
-            max_tokens: 150,
-            temperature: 0.3,
-            response_format: { type: "json_object" },
+                    {
+                      type: "image",
+                      source: {
+                        type: "base64",
+                        media_type: imageFile.mimetype,
+                        data: base64Image
+                      }
+                    }
+                  ]
+                }
+              ]
+            })
           });
+          
+          if (!claudeResponse.ok) {
+            const errorData = await claudeResponse.json();
+            throw {
+              status: claudeResponse.status,
+              message: errorData.error?.message || "Error calling Claude API",
+              data: errorData
+            };
+          }
           
           // Clean up temporary file
           await fs.unlink(imageFile.filepath);
           
-          // Parse and return AI response
-          console.log('✅ Response received from OpenAI');
-          const aiResponse = JSON.parse(response.choices[0].message.content);
-          return res.status(200).json(aiResponse);
+          // Parse Claude's response
+          const responseData = await claudeResponse.json();
+          
+          // Extract the content
+          const content = responseData.content[0].text;
+          
+          // Try to parse the JSON from Claude's response
+          try {
+            // Find JSON object in the response - Claude might wrap it with ```json and ```
+            let jsonString = content;
+            const jsonMatch = content.match(/```(?:json)?\s*([\s\S]*?)\s*```/);
+            if (jsonMatch && jsonMatch[1]) {
+              jsonString = jsonMatch[1];
+            }
+            
+            const parsedResponse = JSON.parse(jsonString);
+            console.log('✅ Response received from Claude');
+            return res.status(200).json(parsedResponse);
+            
+          } catch (jsonError) {
+            console.error('❌ Error parsing JSON from Claude response:', jsonError);
+            console.log('Raw response content:', content);
+            
+            // Try to extract the nutrition information using regex
+            const caloriesMatch = content.match(/"calories":\s*(\d+)/);
+            const proteinMatch = content.match(/"protein":\s*"([^"]+)"/);
+            const carbsMatch = content.match(/"carbs":\s*"([^"]+)"/);
+            const fatMatch = content.match(/"fat":\s*"([^"]+)"/);
+            
+            const extractedData = {
+              calories: caloriesMatch ? parseInt(caloriesMatch[1]) : 0,
+              protein: proteinMatch ? proteinMatch[1] : "0g",
+              carbs: carbsMatch ? carbsMatch[1] : "0g",
+              fat: fatMatch ? fatMatch[1] : "0g"
+            };
+            
+            if (mode === 'detailed') {
+              const ingredientsMatch = content.match(/"ingredients":\s*\[(.*?)\]/);
+              extractedData.ingredients = ingredientsMatch ? 
+                ingredientsMatch[1].split(',').map(i => i.trim().replace(/"/g, '')) : 
+                ["Could not extract ingredients"];
+            }
+            
+            return res.status(200).json(extractedData);
+          }
           
         } catch (err) {
           lastError = err;
           // Only retry rate limit errors
-          if (err.status === 429 && retryCount < maxRetries) {
+          if ((err.status === 429 || err.status === 500) && retryCount < maxRetries) {
             retryCount++;
             continue;
           }
@@ -249,33 +329,25 @@ Analyze this food image and estimate nutritional values based on visible portion
       // If we get here, all retries failed
       throw lastError;
       
-      // Clean up temporary file
-      await fs.unlink(imageFile.filepath);
-      
-      // Parse and return AI response
-      console.log('✅ Response received from OpenAI');
-      const aiResponse = JSON.parse(response.choices[0].message.content);
-      return res.status(200).json(aiResponse);
-      
-    } catch (aiError) {
+    } catch (apiError) {
       // Get status code
-      const statusCode = aiError.status || (aiError.response ? aiError.response.status : null);
+      const statusCode = apiError.status || (apiError.response ? apiError.response.status : null);
       
-      console.error(`❌ Error calling OpenAI API: ${aiError.message}`);
+      console.error(`❌ Error calling Claude API: ${apiError.message}`);
       console.error(`Status code: ${statusCode}`);
       
       let errorMessage = "Failed to get precise estimates from AI service";
       
       // Handle specific error types
       if (statusCode === 429) {
-        console.error('Rate limit exceeded. You have sent too many requests to the OpenAI API.');
+        console.error('Rate limit exceeded. You have sent too many requests to the Claude API.');
         errorMessage = "Rate limit exceeded. Please try again in a few moments.";
       } else if (statusCode === 401) {
         console.error('Authentication error. Check your API key.');
         errorMessage = "API authentication error. Please check your API key.";
       } else if (statusCode === 404) {
-        console.error('Model not found. The specified model does not exist or you don\'t have access to it.');
-        errorMessage = "Model access error. The AI model is not available.";
+        console.error('Endpoint not found or resource unavailable.');
+        errorMessage = "API endpoint error. The service is not available.";
       }
       
       // Clean up temporary file
@@ -283,10 +355,10 @@ Analyze this food image and estimate nutritional values based on visible portion
       
       // Return fallback response
       const fallbackResponse = {
-        calories: "~500",
-        protein: "~25g",
-        carbs: "~40g",
-        fat: "~20g",
+        calories: 0,
+        protein: "0g",
+        carbs: "0g",
+        fat: "0g",
         error: errorMessage,
       };
       
@@ -309,7 +381,8 @@ app.listen(PORT, () => {
 🚀 Simple test server running at http://localhost:${PORT}
 📋 API endpoint: http://localhost:${PORT}/api/estimate
 🖥️ Test form: http://localhost:${PORT}/test-form.html
+🧪 Env test: http://localhost:${PORT}/api/test-env
   
-👉 Set MOCK_API=true in .env to return mock responses without calling OpenAI API
+⚙️ Current mode: ${process.env.MOCK_API === 'true' ? 'MOCK API (not calling Claude)' : 'REAL API (calling Claude)'}
   `);
 });
