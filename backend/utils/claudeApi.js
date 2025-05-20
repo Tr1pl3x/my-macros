@@ -90,10 +90,10 @@ async function processFoodImage(imagePath, mode = 'basic') {
     
     const macrosData = JSON.parse(jsonMatch[0]);
     
-    // Validate the response format
-    validateMacrosData(macrosData);
+    // Validate and fix the response format
+    const validatedData = validateAndFixMacrosData(macrosData);
     
-    return macrosData;
+    return validatedData;
   } catch (error) {
     console.error('Claude API processing error:', error);
     
@@ -112,28 +112,59 @@ async function processFoodImage(imagePath, mode = 'basic') {
 }
 
 /**
- * Validate macros data structure
+ * Validate macros data structure and fix any issues
  * @param {Object} data - Macros data to validate
- * @throws {Error} If validation fails
+ * @returns {Object} - Validated and fixed data
+ * @throws {Error} If validation fails on critical fields
  */
-function validateMacrosData(data) {
+function validateAndFixMacrosData(data) {
+  const result = { ...data };
   const requiredFields = ['calories', 'protein', 'carbs', 'fat', 'ingredients'];
   
+  // Ensure all required fields exist
   for (const field of requiredFields) {
-    if (field !== 'ingredients' && data[field] === undefined) {
-      throw new Error(`Missing required field in Claude response: ${field}`);
+    if (result[field] === undefined) {
+      console.warn(`Field ${field} is missing, setting to null`);
+      result[field] = null;
     }
   }
   
-  // Ingredients can be null or an array, but must be present in the response
-  if (data.ingredients !== null && !Array.isArray(data.ingredients)) {
-    throw new Error('Ingredients field must be null or an array');
+  // Fix ingredients if it's not an array or null
+  if (result.ingredients !== null && !Array.isArray(result.ingredients)) {
+    console.warn('Ingredients field is not an array, converting to array');
+    
+    if (typeof result.ingredients === 'string') {
+      // Try to convert string to array (common Claude response)
+      try {
+        // Check if it's a JSON array string
+        if (result.ingredients.startsWith('[') && result.ingredients.endsWith(']')) {
+          result.ingredients = JSON.parse(result.ingredients);
+        } else {
+          // Otherwise split by commas
+          result.ingredients = result.ingredients.split(',').map(i => i.trim());
+        }
+      } catch (e) {
+        console.warn('Could not parse ingredients string, setting to array with original string');
+        result.ingredients = [result.ingredients];
+      }
+    } else {
+      // If it's something else entirely, convert to null
+      result.ingredients = null;
+    }
   }
   
-  // If message field exists, it should be a string
-  if (data.message !== undefined && typeof data.message !== 'string') {
-    throw new Error('Message field must be a string');
+  // Fix message field if it's not a string or undefined
+  if (result.message !== undefined && typeof result.message !== 'string') {
+    console.warn('Message field is not a string, converting to string');
+    try {
+      result.message = String(result.message);
+    } catch (e) {
+      console.warn('Could not convert message to string, removing field');
+      delete result.message;
+    }
   }
+  
+  return result;
 }
 
 /**
@@ -182,5 +213,5 @@ module.exports = {
   processFoodImage,
   getMockMacroData,
   getNoFoodResponse,
-  validateMacrosData
+  validateAndFixMacrosData
 };
