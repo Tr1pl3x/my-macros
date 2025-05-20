@@ -120,7 +120,7 @@ function App() {
         </div>
       )}
       
-      {loading && <div className="loading-overlay">Analyzing...</div>}
+      {loading && <div className="loading-overlay">Loading...</div>}
       
       {currentScreen === 'welcome' && (
         <WelcomeScreen onStartClick={handleStartClick} />
