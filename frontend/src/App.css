@@ -23,10 +23,11 @@ body {
   color: var(--primary-text);
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+  height: 100vh; /* Full viewport height */
 }
 
 .app {
-  min-height: 100vh;
+  /* min-height: 100vh; */
   max-width: 500px;
   margin: 0 auto;
   position: relative;
@@ -38,7 +39,7 @@ body {
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  min-height: 100vh;
+  height: 100vh;
   padding: 20px;
   width: 100%;
   animation: fadeIn 0.5s ease-in-out;
