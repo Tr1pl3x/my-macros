@@ -61,8 +61,33 @@ app.get('/health', (req, res) => {
 app.use('/api', estimateRoute);
 app.use('/api', verifyRoute);
 
-// Swagger documentation
-app.use('/docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec));
+// Swagger documentation - only mount in development mode
+if (process.env.NODE_ENV !== 'production') {
+  console.log('Swagger documentation available at /docs');
+  app.use('/docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec));
+} else {
+  // In production, provide a simple message if someone tries to access /docs
+  app.get('/docs', (req, res) => {
+    res.status(200).send(`
+      <html>
+        <head>
+          <title>API Documentation</title>
+          <style>
+            body { font-family: Arial, sans-serif; max-width: 800px; margin: 0 auto; padding: 20px; line-height: 1.6; }
+            h1 { color: #333; }
+            p { margin-bottom: 20px; }
+            code { background: #f4f4f4; padding: 2px 5px; border-radius: 3px; }
+          </style>
+        </head>
+        <body>
+          <h1>My Macros App API</h1>
+          <p>API documentation is available in the development environment only.</p>
+          <p>Please refer to the project README for API details or contact the development team.</p>
+        </body>
+      </html>
+    `);
+  });
+}
 
 // 404 handler for undefined routes
 app.use(notFoundHandler);
