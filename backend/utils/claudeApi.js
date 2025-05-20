@@ -19,6 +19,10 @@ async function processFoodImage(imagePath, mode = 'basic') {
     
     systemPrompt += ` If the image does not contain edible food or you cannot identify food in the image with reasonable confidence, return all values as null with an appropriate message.`;
     
+    systemPrompt += ` If you can identify the food but are uncertain about specific nutritional values, provide your best estimate based on similar foods. For example, if you see what appears to be a slice of white bread, include "bread" in the ingredients and provide average macronutrient estimates for a typical slice of bread.`;
+    
+    systemPrompt += ` Always provide some estimate if any food is visible, even if you're not 100% certain of the exact type. Your goal is to give useful nutritional information when possible.`;
+    
     if (mode === 'detailed') {
       systemPrompt += ` If food is present, please identify 3-5 main ingredients in the food and provide detailed macronutrient breakdown.`;
     } else {
@@ -54,7 +58,7 @@ async function processFoodImage(imagePath, mode = 'basic') {
             },
             {
               type: "text",
-              text: "What food is in this image? Please analyze it and estimate the macronutrients. If there is no food in the image, please indicate this."
+              text: "What food is in this image? Please analyze it and estimate the macronutrients. If there is no food in the image, please indicate this. If you're uncertain about specific details, provide your best estimates."
             }
           ]
         }
