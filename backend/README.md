@@ -101,7 +101,9 @@ Simple endpoint to verify the API is running.
 ```
 GET /docs
 ```
-Interactive Swagger documentation for exploring all endpoints.
+Interactive Swagger documentation for exploring all endpoints (available in development environment only).
+
+**Note:** The Swagger UI is only available when running the backend locally in development mode. In production, refer to this README for API details.
 
 ## Integration Guide for Frontend Developers
 
