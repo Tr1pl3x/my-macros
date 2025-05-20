@@ -13,7 +13,6 @@ const verifyRoute = require('./routes/verifyRoute');
 
 // Initialize Express app
 const app = express();
-const PORT = process.env.PORT || 3000;
 
 // Security middleware
 app.use(helmet()); // Set security-related HTTP headers
@@ -27,27 +26,35 @@ app.use(cors({
 app.use(express.json({ limit: '10mb' })); // For JSON requests
 app.use(express.urlencoded({ extended: true, limit: '10mb' })); // For form data
 
-// Rate limiting
-const apiLimiter = rateLimit({
-  windowMs: 15 * 60 * 1000, // 15 minutes
-  max: 100, // Limit each IP to 100 requests per windowMs
-  standardHeaders: true,
-  legacyHeaders: false,
-  message: {
-    status: 429,
-    error: 'Too many requests, please try again later.'
-  }
-});
+// Rate limiting - only in production to avoid issues in development
+if (process.env.NODE_ENV === 'production') {
+  const apiLimiter = rateLimit({
+    windowMs: 15 * 60 * 1000, // 15 minutes
+    max: 100, // Limit each IP to 100 requests per windowMs
+    standardHeaders: true,
+    legacyHeaders: false,
+    message: {
+      status: 429,
+      error: 'Too many requests, please try again later.'
+    }
+  });
+  
+  // Apply rate limiting to all requests
+  app.use(apiLimiter);
+}
 
-// Apply rate limiting to all requests
-app.use(apiLimiter);
-
-// Request logging
-app.use(requestLogger);
+// Request logging (but not in production serverless environment)
+if (process.env.NODE_ENV !== 'production') {
+  app.use(requestLogger);
+}
 
 // Health check endpoint
 app.get('/health', (req, res) => {
-  res.status(200).json({ status: 'ok', timestamp: new Date().toISOString() });
+  res.status(200).json({ 
+    status: 'ok', 
+    timestamp: new Date().toISOString(),
+    env: process.env.NODE_ENV
+  });
 });
 
 // Routes
@@ -63,12 +70,14 @@ app.use(notFoundHandler);
 // Global error handler
 app.use(errorHandler);
 
-// Start server
-if (process.env.NODE_ENV !== 'test') {
+// Only listen on a port if not in production (for local development)
+// In production on Vercel, the serverless function will handle this
+if (process.env.NODE_ENV !== 'production' && process.env.NODE_ENV !== 'test') {
+  const PORT = process.env.PORT || 3000;
   app.listen(PORT, () => {
     console.log(`Server running on port ${PORT}`);
     console.log(`API Documentation: http://localhost:${PORT}/docs`);
   });
 }
 
-module.exports = app; // For testing purposes
+module.exports = app; // For testing purposes and serverless function
