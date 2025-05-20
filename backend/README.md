@@ -1,90 +1,118 @@
-# My Macros Backend
+# My Macros App - Backend
 
-This is the serverless backend API for the My Macros app, which estimates macronutrients from food photos using the OpenAI Vision API.
+This is the backend service for My Macros App, which estimates macronutrients from food images using the Claude 3 API.
 
-## Setup & Deployment
+## Features
 
-### Prerequisites
-- Node.js 18+ installed
-- An OpenAI API key with access to GPT-4 Vision
-- Vercel account (for deployment)
-- Vercel CLI installed (`npm install -g vercel`)
+- Password-protected API endpoints
+- Image uploading and processing
+- Integration with Claude 3 API for food recognition and macro estimation
+- Swagger API documentation
+- Input validation and error handling
+- Rate limiting and security headers
+- Request logging
 
-### Local Development
+## Setup
 
-1. Install dependencies:
+1. Clone the repository
+2. Install dependencies:
    ```bash
    npm install
    ```
-
-2. Create a `.env` file based on `.env.example`:
+3. Create a `.env` file with the required environment variables (see `.env.example`)
+4. Start the server:
    ```bash
-   cp .env.example .env
+   npm run dev   # Development mode with auto-reload
+   npm start     # Production mode
    ```
 
-3. Add your OpenAI API key to the `.env` file:
-   ```
-   OPENAI_API_KEY=your_openai_api_key_here
-   APP_PASSWORD=2911  # or your custom password
-   ```
+## API Endpoints
 
-4. Run the development server:
-   ```bash
-   npm run dev
-   ```
+- `GET /health` - Health check endpoint
+- `POST /api/verify` - Password verification endpoint
+- `POST /api/estimate` - Food image analysis endpoint
+- `GET /docs` - Swagger API documentation
 
-5. The API will be available at `http://localhost:3000/api/estimate`
+## Environment Variables
 
-### Deployment to Vercel
+- `ANTHROPIC_API_KEY` - Your Anthropic Claude API key
+- `APP_PASSWORD` - Password for the app (default: 2911)
+- `PORT` - Server port (default: 3000)
+- `NODE_ENV` - Environment (development/production)
+- `FRONTEND_URL` - URL of the frontend for CORS
+- `MAX_FILE_SIZE` - Maximum upload file size in bytes (default: 5MB)
+- `ALLOWED_FILE_TYPES` - Comma-separated list of allowed file types
+- `CLAUDE_API_URL` - Claude API endpoint
+- `CLAUDE_MODEL` - Claude model to use (default: claude-3-haiku-20240307)
+- `MAX_TOKENS` - Maximum tokens for Claude response (default: 1024)
 
-1. Set up your environment variables on Vercel:
-   - Go to your Vercel dashboard
-   - Navigate to your project settings
-   - Add environment variables:
-     - `OPENAI_API_KEY`: Your OpenAI API key
-     - `APP_PASSWORD`: The 4-digit PIN (default: 2911)
+## Deployment
 
-2. Deploy using Vercel CLI:
-   ```bash
-   vercel login
-   vercel
-   ```
+For deployment on Vercel:
 
-3. For production deployment:
-   ```bash
-   vercel --prod
-   ```
+1. Set up environment variables in Vercel dashboard
+2. Configure the appropriate build command
+3. Set the output directory
 
-## API Usage
+For deployment on other platforms:
 
-The API accepts POST requests to `/api/estimate` with the following parameters:
+1. Ensure HTTPS is enabled
+2. Configure CORS to accept only your frontend origin
+3. Set up rate limiting suitable for your expected traffic
 
-- `image`: The food image file (required)
-- `password`: The 4-digit PIN (required)
-- `mode`: Analysis mode - either `basic` or `detailed` (optional, defaults to `basic`)
+## Development
 
-### Example Response
+- Run tests: `npm test`
+- Generate API docs: Available at the `/docs` endpoint after starting the server
+- Debug logs: See console output when running in development mode
 
-```json
-{
-  "calories": 540,
-  "protein": "30g",
-  "carbs": "45g",
-  "fat": "22g",
-  "ingredients": ["grilled chicken", "rice", "broccoli"]  // only in detailed mode
-}
+## Project Structure
+
+```
+backend/
+├── middleware/        # Middleware functions
+│   └── logger.js      # Request logging middleware
+├── routes/            # API routes
+│   ├── estimateRoute.js   # Food image analysis endpoint
+│   └── verifyRoute.js     # Password verification endpoint
+├── swagger/           # API documentation
+│   └── swaggerConfig.js   # Swagger configuration
+├── temp-uploads/      # Temporary directory for uploaded files
+├── utils/             # Utility functions
+│   ├── claudeApi.js   # Claude API integration
+│   └── fileUpload.js  # File upload handling
+├── .env               # Environment variables (create this)
+├── .env.example       # Example environment variables
+├── .gitignore         # Git ignore file
+├── app.js             # Main application file
+├── package.json       # Project dependencies
+└── README.md          # Project documentation
 ```
 
 ## Error Handling
 
-The API returns appropriate HTTP status codes:
-- 400: Bad request (missing image, invalid file type, etc.)
-- 401: Unauthorized (incorrect password)
-- 405: Method not allowed (only POST is supported)
-- 500: Internal server error
+The application implements comprehensive error handling:
 
-## Notes
+- Validation errors: 400 Bad Request
+- Authentication errors: 401 Unauthorized
+- File size limits: 413 Payload Too Large
+- AI service errors: 502 Bad Gateway
+- Internal errors: 500 Internal Server Error
 
-- Maximum file size: 10MB
-- Supported image formats: JPEG, PNG, WEBP, HEIC
-- The API uses OpenAI's GPT-4 Vision model to analyze food images
+All error responses follow a consistent format:
+
+```json
+{
+  "status": 400,
+  "error": "Error message"
+}
+```
+
+## Security Considerations
+
+- Uses Helmet.js for security headers
+- Rate limiting to prevent abuse
+- CORS configured for frontend-only access
+- Temporary file cleanup to prevent disk space issues
+- No sensitive information in logs
+- Input validation to prevent malicious uploads
