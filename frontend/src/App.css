@@ -28,6 +28,7 @@ body {
 
 .app {
   /* min-height: 100vh; */
+  height: 100vh; /* Full viewport height */
   max-width: 500px;
   margin: 0 auto;
   position: relative;
