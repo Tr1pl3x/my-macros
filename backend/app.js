@@ -14,6 +14,10 @@ const verifyRoute = require('./routes/verifyRoute');
 // Initialize Express app
 const app = express();
 
+// Set trust proxy for Vercel deployment
+// This is needed for rate limiting to work correctly with proxies
+app.set('trust proxy', 1);
+
 // Security middleware
 app.use(helmet()); // Set security-related HTTP headers
 app.use(cors({
@@ -88,6 +92,11 @@ if (process.env.NODE_ENV !== 'production') {
     `);
   });
 }
+
+// Handle favicon requests to prevent 404 errors
+app.get('/favicon.ico', (req, res) => {
+  res.status(204).end(); // No content response
+});
 
 // 404 handler for undefined routes
 app.use(notFoundHandler);
