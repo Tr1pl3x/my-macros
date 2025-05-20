@@ -1,128 +1,105 @@
-// utils/claudeApi.js
-const axios = require('axios');
-const fs = require('fs');
+// routes/estimateRoute.js
+const express = require('express');
+const router = express.Router();
+const { processFileUpload, cleanupFile } = require('../utils/fileUpload');
+const { processFoodImage, getNoFoodResponse } = require('../utils/claudeApi');
+const { ApiError } = require('../middleware/errorHandler');
 
 /**
- * Process an image with Claude API to estimate macros
- * @param {string} imagePath - Path to the temporary uploaded image file
- * @param {string} mode - Analysis mode ('basic' or 'detailed')
- * @returns {Promise<Object>} - Parsed macros data
+ * @swagger
+ * /api/estimate:
+ *   post:
+ *     summary: Estimate macros from food image
+ *     description: Analyze a food image to estimate macronutrients and identify ingredients. Returns null values if no food is detected.
+ *     tags: [Analysis]
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         multipart/form-data:
+ *           schema:
+ *             $ref: '#/components/schemas/EstimateRequest'
+ *     responses:
+ *       200:
+ *         description: Successful analysis
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/EstimateResponse'
+ *       400:
+ *         $ref: '#/components/responses/BadRequest'
+ *       500:
+ *         $ref: '#/components/responses/InternalServerError'
  */
-async function processFoodImage(imagePath, mode = 'basic') {
+router.post('/estimate', async (req, res, next) => {
+  let imagePath = null;
+  
   try {
-    // Read the image file as base64
-    const imageBuffer = fs.readFileSync(imagePath);
-    const base64Image = imageBuffer.toString('base64');
+    // Process and validate the uploaded file
+    const uploadResult = await processFileUpload(req);
+    imagePath = uploadResult.imagePath;
     
-    // Construct the prompt based on the mode
-    let systemPrompt = `You are a nutrition analysis assistant that accurately estimates macronutrients (calories, protein, carbs, fat) in food images.`;
+    // Log upload info (without sensitive data)
+    console.log(`Processing ${uploadResult.originalFilename} (${uploadResult.mimetype}) in ${uploadResult.mode} mode`);
     
-    if (mode === 'detailed') {
-      systemPrompt += ` Please identify 3-5 main ingredients in the food and provide detailed macronutrient breakdown.`;
-    } else {
-      systemPrompt += ` Please identify 3-5 main ingredients in the food and provide basic macronutrient estimates.`;
-    }
-    
-    systemPrompt += ` Return ONLY a valid JSON object with the following structure: 
-    {
-      "calories": "value",
-      "protein": "value in grams",
-      "carbs": "value in grams",
-      "fat": "value in grams",
-      "ingredients": ["ingredient1", "ingredient2", "ingredient3"]
-    }
-    Do not include any explanations or notes outside the JSON object.`;
-
-    // Prepare the request for Claude API
-    const requestData = {
-      model: process.env.CLAUDE_MODEL,
-      max_tokens: parseInt(process.env.MAX_TOKENS, 10),
-      messages: [
-        {
-          role: "user",
-          content: [
-            {
-              type: "image",
-              source: {
-                type: "base64",
-                media_type: "image/jpeg",
-                data: base64Image
-              }
-            },
-            {
-              type: "text",
-              text: "What food is in this image? Please analyze it and estimate the macronutrients."
-            }
-          ]
+    // Process the image with Claude API
+    let macrosData;
+    try {
+      // Check if we have a valid API key, otherwise use mock data
+      if (!process.env.ANTHROPIC_API_KEY || process.env.ANTHROPIC_API_KEY === 'your-key-here') {
+        console.warn('Using mock data because API key is not set');
+        // For testing purposes, you can simulate no food detection with a query parameter
+        if (req.query.noFood === 'true') {
+          macrosData = getNoFoodResponse();
+        } else {
+          // This would be replaced with the real API call in production
+          macrosData = await processFoodImage(imagePath, uploadResult.mode);
         }
-      ],
-      system: systemPrompt
-    };
-
-    // Make the API call to Claude
-    const response = await axios.post(
-      process.env.CLAUDE_API_URL,
-      requestData,
-      {
-        headers: {
-          'Content-Type': 'application/json',
-          'x-api-key': process.env.ANTHROPIC_API_KEY,
-          'anthropic-version': '2023-06-01'
-        }
+      } else {
+        // Real API call
+        macrosData = await processFoodImage(imagePath, uploadResult.mode);
       }
-    );
-
-    // Extract and parse the JSON response
-    const claudeResponse = response.data.content[0].text;
-    
-    // Find JSON object in the response
-    const jsonMatch = claudeResponse.match(/\{[\s\S]*\}/);
-    if (!jsonMatch) {
-      throw new Error('Failed to extract valid JSON from Claude API response');
+    } catch (apiError) {
+      console.error('Error with Claude API:', apiError);
+      // If it's an API-specific error, we might want to return a more specific message
+      throw new ApiError(502, 'Failed to analyze image with AI service', 
+        process.env.NODE_ENV === 'development' ? apiError.message : undefined);
     }
     
-    const macrosData = JSON.parse(jsonMatch[0]);
+    // Clean up the temporary file
+    cleanupFile(imagePath);
+    imagePath = null;
     
-    // Validate the response format
-    validateMacrosData(macrosData);
+    // Return the analysis results, which may include null values if no food detected
+    return res.status(200).json(macrosData);
     
-    return macrosData;
   } catch (error) {
-    console.error('Claude API processing error:', error);
+    // Clean up temporary file in case of error
+    if (imagePath) {
+      cleanupFile(imagePath);
+    }
     
-    if (error.response) {
-      // Claude API error response
-      console.error('API error details:', error.response.data);
-      throw new Error(`Claude API error: ${error.response.status} - ${JSON.stringify(error.response.data)}`);
-    } else if (error.request) {
-      // No response received
-      throw new Error('No response received from Claude API');
-    } else {
-      // Other errors
-      throw error;
+    // Handle specific error types
+    if (error.message.includes('File type not allowed') || 
+        error.message.includes('No image file uploaded') ||
+        error.message.includes('Invalid mode specified')) {
+      next(new ApiError(400, error.message));
+      return;
     }
-  }
-}
-
-/**
- * Validate macros data structure
- * @param {Object} data - Macros data to validate
- * @throws {Error} If validation fails
- */
-function validateMacrosData(data) {
-  const requiredFields = ['calories', 'protein', 'carbs', 'fat', 'ingredients'];
-  
-  for (const field of requiredFields) {
-    if (!data[field]) {
-      throw new Error(`Missing required field in Claude response: ${field}`);
+    
+    if (error.message.includes('File size exceeds')) {
+      next(new ApiError(413, 'File size exceeds the limit'));
+      return;
     }
+    
+    if (error.message.includes('Claude API error')) {
+      next(new ApiError(502, 'Failed to process image with AI service', 
+        process.env.NODE_ENV === 'development' ? error.message : undefined));
+      return;
+    }
+    
+    // Pass other errors to the global error handler
+    next(error);
   }
-  
-  if (!Array.isArray(data.ingredients)) {
-    throw new Error('Ingredients field must be an array');
-  }
-}
+});
 
-module.exports = {
-  processFoodImage
-};
+module.exports = router;

@@ -80,27 +80,37 @@ const options = {
           type: 'object',
           properties: {
             calories: {
-              type: 'string',
+              type: ['string', 'null'],
               example: '540',
+              description: 'Estimated calories or null if no food detected',
             },
             protein: {
-              type: 'string',
+              type: ['string', 'null'],
               example: '30g',
+              description: 'Estimated protein content or null if no food detected',
             },
             carbs: {
-              type: 'string',
+              type: ['string', 'null'],
               example: '45g',
+              description: 'Estimated carbohydrate content or null if no food detected',
             },
             fat: {
-              type: 'string',
+              type: ['string', 'null'],
               example: '22g',
+              description: 'Estimated fat content or null if no food detected',
             },
             ingredients: {
-              type: 'array',
+              type: ['array', 'null'],
               items: {
                 type: 'string',
               },
               example: ['grilled chicken', 'rice', 'broccoli'],
+              description: 'Identified ingredients or null if no food detected',
+            },
+            message: {
+              type: ['string', 'null'],
+              example: 'No edible food detected in the image',
+              description: 'Optional message explaining why values are null, if applicable',
             },
           },
         },
