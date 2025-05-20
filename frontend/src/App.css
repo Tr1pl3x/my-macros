@@ -1,0 +1,522 @@
+/* src/App.css */
+:root {
+  --background-color: #121212;
+  --primary-text: #ffffff;
+  --secondary-text: #e0e0e0;
+  --accent-color: #00bfa5;
+  --secondary-accent: #008875;
+  --error-color: #cf6679;
+  --card-background: #1e1e1e;
+  --button-hover: #00a896;
+  --transition-speed: 0.3s;
+}
+
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
+  background-color: var(--background-color);
+  color: var(--primary-text);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+.app {
+  min-height: 100vh;
+  max-width: 500px;
+  margin: 0 auto;
+  position: relative;
+  overflow-x: hidden; /* Prevent horizontal scroll during animations */
+}
+
+.screen {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 100vh;
+  padding: 20px;
+  width: 100%;
+  animation: fadeIn 0.5s ease-in-out;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes scaleIn {
+  from {
+    opacity: 0;
+    transform: scale(0.9);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+@keyframes slideInRight {
+  from {
+    opacity: 0;
+    transform: translateX(30px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+/* Welcome Screen */
+.welcome-screen {
+  text-align: center;
+  justify-content: center;
+}
+
+.app-title {
+  font-size: 2.5rem;
+  color: var(--accent-color);
+  margin-bottom: 30px;
+  animation: scaleIn 0.6s ease-out;
+}
+
+.app-description {
+  font-size: 1.2rem;
+  margin-bottom: 50px;
+  color: var(--secondary-text);
+  animation: fadeIn 0.8s ease-out;
+}
+
+/* Common UI Elements */
+.primary-button {
+  background-color: var(--accent-color);
+  color: var(--primary-text);
+  border: none;
+  border-radius: 8px;
+  padding: 16px 32px;
+  font-size: 1.1rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background-color var(--transition-speed) ease, 
+              transform var(--transition-speed) ease, 
+              box-shadow var(--transition-speed) ease;
+  margin: 10px 0;
+  width: 100%;
+  max-width: 300px;
+  text-align: center;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+}
+
+.primary-button:hover {
+  background-color: var(--button-hover);
+  transform: translateY(-2px);
+  box-shadow: 0 6px 8px rgba(0, 0, 0, 0.2);
+}
+
+.primary-button:active {
+  transform: translateY(1px);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+}
+
+.primary-button:disabled {
+  background-color: #333;
+  color: #666;
+  cursor: not-allowed;
+  transform: none;
+  box-shadow: none;
+}
+
+.back-button {
+  position: absolute;
+  top: 20px;
+  left: 20px;
+  background-color: transparent;
+  border: 2px solid var(--accent-color);
+  color: var(--accent-color);
+  width: 48px;
+  height: 48px;
+  border-radius: 8px;
+  font-size: 1.5rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: background-color var(--transition-speed) ease, 
+              color var(--transition-speed) ease;
+}
+
+.back-button:hover {
+  background-color: rgba(0, 191, 165, 0.1);
+}
+
+.screen-title {
+  font-size: 1.3rem;
+  font-weight: 500;
+  text-align: center;
+  margin-bottom: 40px;
+  color: var(--primary-text);
+  animation: fadeIn 0.5s ease-out;
+}
+
+.text-link {
+  color: var(--accent-color);
+  text-decoration: none;
+  transition: color var(--transition-speed) ease;
+}
+
+.text-link:hover {
+  text-decoration: underline;
+  color: var(--button-hover);
+}
+
+.error-message {
+  position: fixed;
+  top: 20px;
+  left: 50%;
+  transform: translateX(-50%);
+  background-color: var(--error-color);
+  color: white;
+  padding: 12px 20px;
+  border-radius: 8px;
+  z-index: 1000;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 90%;
+  max-width: 400px;
+  animation: slideInTop 0.3s ease-out;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+}
+
+@keyframes slideInTop {
+  from {
+    opacity: 0;
+    transform: translate(-50%, -20px);
+  }
+  to {
+    opacity: 1;
+    transform: translate(-50%, 0);
+  }
+}
+
+.error-message button {
+  background: transparent;
+  border: none;
+  color: white;
+  font-weight: bold;
+  cursor: pointer;
+  margin-left: 10px;
+  transition: opacity var(--transition-speed) ease;
+}
+
+.error-message button:hover {
+  opacity: 0.8;
+}
+
+.loading-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.7);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  color: var(--primary-text);
+  font-size: 1.2rem;
+  animation: fadeIn 0.3s ease-out;
+}
+
+/* Password Screen */
+.password-screen {
+  justify-content: flex-start;
+  padding-top: 100px; /* Increased from 80px */
+}
+
+.password-title {
+  margin-top: 30px; /* Added margin to increase space */
+  margin-bottom: 40px;
+}
+
+.password-display {
+  display: flex;
+  gap: 12px;
+  margin-bottom: 40px;
+  animation: scaleIn 0.4s ease-out;
+}
+
+.password-digit {
+  width: 48px;
+  height: 48px;
+  border: 2px solid var(--accent-color);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 24px;
+  transition: background-color var(--transition-speed) ease,
+              transform var(--transition-speed) ease;
+}
+
+.password-digit.filled {
+  background-color: rgba(0, 191, 165, 0.1);
+  transform: scale(1.05);
+}
+
+.keypad {
+  width: 100%;
+  max-width: 300px;
+}
+
+.keypad-row {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 12px;
+}
+
+.keypad-button {
+  width: 80px;
+  height: 60px;
+  background-color: transparent;
+  border: 2px solid var(--accent-color);
+  border-radius: 8px;
+  color: var(--primary-text);
+  font-size: 1.5rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: background-color var(--transition-speed) ease,
+              transform var(--transition-speed) ease;
+}
+
+.keypad-button:hover {
+  background-color: rgba(0, 191, 165, 0.2);
+  transform: translateY(-2px);
+}
+
+.keypad-button:active {
+  transform: translateY(1px);
+}
+
+.keypad-button:disabled {
+  border-color: #444;
+  color: #666;
+  cursor: not-allowed;
+  transform: none;
+}
+
+.function-button {
+  font-size: 1rem;
+}
+
+.help-text {
+  margin-top: 40px;
+  font-size: 0.9rem;
+  color: var(--secondary-text);
+  animation: fadeIn 0.8s ease-out;
+}
+
+/* Image Upload Screen */
+.image-preview-container {
+  width: 100%;
+  height: 300px;
+  border-radius: 8px;
+  overflow: hidden;
+  margin-bottom: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background-color: #0a0a0a;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+  animation: scaleIn 0.5s ease-out;
+}
+
+.image-preview {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  animation: fadeIn 0.5s ease-out;
+}
+
+.no-image {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  text-align: center;
+  padding: 20px;
+  color: var(--secondary-text);
+}
+
+.file-input {
+  display: none;
+}
+
+.upload-actions {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  animation: fadeIn 0.7s ease-out;
+}
+
+/* Results Screen */
+.results-screen {
+  padding: 20px;
+  justify-content: flex-start;
+}
+
+.results-image-container {
+  width: 100%;
+  height: 200px;
+  border-radius: 8px;
+  overflow: hidden;
+  margin-bottom: 20px;
+  animation: scaleIn 0.5s ease-out;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+}
+
+.results-image {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+
+.ingredients-section {
+  width: 100%;
+  margin-bottom: 20px;
+  animation: fadeIn 0.6s ease-out;
+}
+
+.ingredients-section h3 {
+  color: var(--accent-color);
+  margin-bottom: 12px;
+  font-size: 1.2rem;
+}
+
+.ingredients-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.ingredient-tag {
+  background-color: rgba(0, 191, 165, 0.2);
+  color: var(--accent-color);
+  padding: 6px 12px;
+  border-radius: 20px;
+  font-size: 0.9rem;
+  transition: background-color var(--transition-speed) ease,
+              transform var(--transition-speed) ease;
+  animation: slideInRight 0.5s ease-out;
+  animation-fill-mode: both;
+}
+
+.ingredient-tag:hover {
+  background-color: rgba(0, 191, 165, 0.3);
+  transform: translateY(-2px);
+}
+
+.results-title {
+  width: 100%;
+  color: var(--accent-color);
+  margin-bottom: 20px;
+  font-size: 1.3rem;
+  animation: fadeIn 0.6s ease-out;
+}
+
+.macro-results {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-bottom: 30px;
+}
+
+.macro-card {
+  width: 100%;
+  background-color: var(--card-background);
+  border-radius: 8px;
+  padding: 16px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  animation: slideInRight 0.5s ease-out;
+  animation-fill-mode: both;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+  transition: transform var(--transition-speed) ease,
+              box-shadow var(--transition-speed) ease;
+}
+
+.macro-card:nth-child(1) { animation-delay: 0.1s; }
+.macro-card:nth-child(2) { animation-delay: 0.2s; }
+.macro-card:nth-child(3) { animation-delay: 0.3s; }
+.macro-card:nth-child(4) { animation-delay: 0.4s; }
+
+.macro-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+}
+
+.macro-label {
+  font-size: 1.1rem;
+  color: var(--secondary-text);
+}
+
+.macro-value {
+  font-size: 1.3rem;
+  font-weight: bold;
+  color: var(--accent-color);
+}
+
+.no-food-detected {
+  text-align: center;
+  color: var(--secondary-text);
+  margin: 40px 0;
+  animation: fadeIn 0.6s ease-out;
+}
+
+.no-food-detected h3 {
+  color: var(--error-color);
+  margin-bottom: 12px;
+}
+
+.done-button {
+  margin-top: auto;
+  animation: fadeIn 0.8s ease-out;
+}
+
+/* Responsive adjustments */
+@media (max-height: 700px) {
+  .password-screen {
+    padding-top: 60px;
+  }
+  
+  .password-digit {
+    width: 40px;
+    height: 40px;
+  }
+  
+  .keypad-button {
+    height: 50px;
+  }
+}
+
+@media (max-width: 360px) {
+  .keypad-button {
+    width: 70px;
+  }
+}
