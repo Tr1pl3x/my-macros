@@ -448,27 +448,7 @@ Make sure your Claude API key is correctly set in `.env`.
   - `ANTHROPIC_API_KEY`
   - `APP_PASSWORD`
 
----
 
-
-## 📱 App Screenshots
-
-Below are some screenshots from the app demonstrating the full flow:
-
-### Home Page
-![Home](./ui-screenshots/ui-home-page.jpg)
-
-### Password Entry
-![Password](./ui-screenshots/ui-password-page.jpg)
-
-### Upload Image
-![Upload](./ui-screenshots/ui-upload-image.jpg)
-
-### Results - Food Detected
-![Results - Food](./ui-screenshots/ui-results-food.jpg)
-
-### Results - No Food Detected
-![Results - Not Food](./ui-screenshots/ui-results-not-food.jpg)
 
 
 ---
